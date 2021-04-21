@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import cd.java.spring.logreg.authentication.models.User;
 import cd.java.spring.logreg.authentication.services.UserService;
+import cd.java.spring.logreg.authentication.validators.UserValidator;
 
 /**
  * @author ccomstock
@@ -29,6 +29,8 @@ public class UsersController {
 	
 	@Autowired
     private UserService userService;
+	@Autowired
+	private UserValidator userValidator;
     
     @GetMapping("/registration")
     public String registerForm(@ModelAttribute("user") User user) {
@@ -43,11 +45,10 @@ public class UsersController {
     public String registerUser(@Valid @ModelAttribute("user") User user, BindingResult result, HttpSession session) {
         // if result has errors, return the registration page (don't worry about validations just now)
         // else, save the user in the database, save the user id in session, and redirect them to the /home route
-    	if(!result.hasFieldErrors("passwordConfirmation") && !user.getPasswordConfirmation().equals(user.getPassword())) 
-    		result.addError(new FieldError("user", "passwordConfirmation", "Password Confirmation does not match Password"));
+    	userValidator.validate(user, result);
     	if(result.hasErrors()) return "registrationPage.jsp";
-    	userService.registerUser(user);
-    	session.setAttribute("userId", user.getId());
+    	User u = userService.registerUser(user);
+    	session.setAttribute("userId", u.getId());
     	return "redirect:/home";
     }
     
